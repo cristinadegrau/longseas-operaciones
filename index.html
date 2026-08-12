@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Longseas — Matriz de Operaciones</title>
+<style>
+  :root {
+    --navy: #16283F; --navy-2: #1F3554; --slate-600: #475569; --slate-400: #94A3B8;
+    --bg: #F6F8FA; --card: #FFFFFF; --line: #E5EAF0;
+    --water: #0090C1; --water-lt: #E0F4FB;
+    --green: #16A34A; --green-lt: #DCFCE7;
+    --amber: #D97706; --amber-lt: #FEF3C7;
+    --red: #DC2626; --red-lt: #FEE2E2;
+    --violet-lt: #EDE9FE;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--navy); padding-bottom: 4rem; }
+
+  header { background: var(--navy); color: #fff; padding: 1.4rem 2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: .5px; }
+  .logo span { color: var(--water); }
+  .header-sub { color: #B9C6D8; font-size: .85rem; }
+  .refresh-btn { margin-left: auto; background: var(--water); border: none; color: #fff; font-weight: 600; padding: .5rem 1rem; border-radius: 8px; cursor: pointer; font-size: .85rem; }
+  .refresh-btn:hover { filter: brightness(1.1); }
+  #last-updated { font-size: .75rem; color: #B9C6D8; width: 100%; }
+
+  main { max-width: 1500px; margin: 0 auto; padding: 1.5rem 1.5rem 0; }
+
+  .section-head { display: flex; align-items: center; gap: .8rem; margin: 2rem 0 1rem; }
+  .section-title { font-size: .85rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--slate-600); }
+  .section-badge { font-size: .72rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .badge-ops { background: var(--water-lt); color: #0077A8; }
+  .badge-log { background: var(--amber-lt); color: #92400E; }
+  .section-line { flex: 1; height: 1px; background: var(--line); }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; border-top: 4px solid var(--slate-400); }
+  .kpi.blue { border-top-color: var(--water); }
+  .kpi.green { border-top-color: var(--green); }
+  .kpi.amber { border-top-color: var(--amber); }
+  .kpi.red { border-top-color: var(--red); }
+  .kpi-label { font-size: .7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-600); }
+  .kpi-value { font-size: 1.55rem; font-weight: 800; margin: .3rem 0 .15rem; }
+  .kpi-sub { font-size: .75rem; color: var(--slate-400); }
+
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .table-card-header { padding: 1rem 1.3rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .table-card-title { font-weight: 800; font-size: 1.02rem; }
+  .table-card-sub { font-size: .78rem; color: var(--slate-400); margin-top: 2px; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .82rem; white-space: nowrap; }
+  th { background: #F1F5F9; color: var(--slate-600); font-size: .7rem; letter-spacing: .5px; text-transform: uppercase; padding: .6rem .8rem; text-align: left; border-bottom: 1px solid var(--line); }
+  th.right { text-align: right; } th.center { text-align: center; }
+  td { padding: .55rem .8rem; border-bottom: 1px solid #F1F5F9; }
+  td.right { text-align: right; } td.center { text-align: center; }
+  td.num { font-variant-numeric: tabular-nums; }
+  td.strong { font-weight: 700; }
+  tr:hover td { background: #FAFCFE; }
+  .total-row td { background: #F8FAFC !important; border-top: 2px solid var(--line); font-weight: 700; }
+  .empty-row td { text-align: center; color: var(--slate-400); padding: 2rem; }
+
+  .pi-num { font-weight: 700; color: var(--navy-2); background: #EEF2F7; padding: 2px 8px; border-radius: 6px; font-size: .78rem; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .water-col { color: var(--water); font-weight: 600; }
+
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .b-paid    { background: var(--green-lt); color: #15803D; }
+  .b-pending { background: var(--amber-lt); color: #92400E; }
+  .b-late    { background: var(--red-lt); color: #B91C1C; }
+  .b-info    { background: var(--water-lt); color: #0077A8; }
+  .b-neutral { background: #F1F5F9; color: #64748B; }
+  .b-violet  { background: var(--violet-lt); color: #5B21B6; }
+
+  #error-state { display: none; background: var(--red-lt); border: 1px solid #FCA5A5; color: #B91C1C; border-radius: 12px; padding: 1rem 1.3rem; margin-top: 1.5rem; font-size: .85rem; }
+  .loading-note { color: var(--slate-400); font-size: .85rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">LONGSEAS <span>· Operaciones</span></div>
+  <div class="header-sub">Matriz de operaciones y control logístico de contenedores</div>
+  <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
+  <div id="last-updated"></div>
+</header>
+
+<main>
+  <div id="error-state">⚠️ <strong>Could not load data.</strong> Check that the Google Sheet is published (File → Share → Publish to web → Entire Document) and the tab gids are correct.</div>
+
+  <!-- KPIs -->
+  <div class="section-head"><span class="section-title">Key Metrics</span><div class="section-line"></div></div>
+  <div class="kpi-grid">
+    <div class="kpi blue"><div class="kpi-label">Total Purchases</div><div class="kpi-value" style="color:var(--water);" id="kpi-buy">—</div><div class="kpi-sub" id="kpi-buy-sub">&nbsp;</div></div>
+    <div class="kpi green"><div class="kpi-label">Total Sales</div><div class="kpi-value" style="color:var(--green);" id="kpi-sell">—</div><div class="kpi-sub" id="kpi-sell-sub">&nbsp;</div></div>
+    <div class="kpi amber"><div class="kpi-label">Net Profit</div><div class="kpi-value" style="color:var(--amber);" id="kpi-net">—</div><div class="kpi-sub" id="kpi-net-sub">&nbsp;</div></div>
+    <div class="kpi red"><div class="kpi-label">Total Expenses</div><div class="kpi-value" style="color:var(--red);" id="kpi-exp">—</div><div class="kpi-sub" id="kpi-exp-sub">&nbsp;</div></div>
+    <div class="kpi"><div class="kpi-label">Open Operations</div><div class="kpi-value" id="kpi-open">—</div><div class="kpi-sub">Operation status: Open</div></div>
+    <div class="kpi"><div class="kpi-label">Pending Payments</div><div class="kpi-value" style="color:var(--amber);" id="kpi-pay">—</div><div class="kpi-sub">Suppliers / Clients pending payment</div></div>
+    <div class="kpi blue"><div class="kpi-label">Containers Active</div><div class="kpi-value" style="color:var(--water);" id="kpi-cont">—</div><div class="kpi-sub" id="kpi-cont-sub">&nbsp;</div></div>
+    <div class="kpi red"><div class="kpi-label">LFD Alerts</div><div class="kpi-value" style="color:var(--red);" id="kpi-lfd">—</div><div class="kpi-sub">Free days overdue or due soon</div></div>
+  </div>
+
+  <!-- OPERATIONS -->
+  <div class="section-head"><span class="section-title">Operations</span><span class="section-badge badge-ops">Financial Matrix</span><div class="section-line"></div></div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <div>
+        <div class="table-card-title">Operations Matrix</div>
+        <div class="table-card-sub">Columns are read automatically from your Google Sheet — add or rename freely</div>
+      </div>
+      <span class="badge b-info" id="ops-count-badge">—</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="ops-thead-row"><th>Loading…</th></tr></thead>
+        <tbody id="ops-tbody"><tr class="empty-row"><td colspan="24">Loading operations…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LOGISTICS -->
+  <div class="section-head"><span class="section-title">Logistics</span><span class="section-badge badge-log">Container Tracking</span><div class="section-line"></div></div>
+  <div class="table-card">
+    <div class="table-card-header">
+      <div>
+        <div class="table-card-title">Container Control</div>
+        <div class="table-card-sub">LFD countdown uses the earliest of LFD Naviera / LFD Terminal · delivered containers are closed automatically</div>
+      </div>
+      <span class="badge b-info" id="log-count-badge">—</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="log-thead-row"><th>Loading…</th></tr></thead>
+        <tbody id="log-tbody"><tr class="empty-row"><td colspan="20">Loading containers…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="loading-note">Data source: Google Sheets (published) · refreshes on every page load · Google may take ~5 min to reflect recent edits</div>
+</main>
+
+<script>
+// ══════════════════ CONFIG ══════════════════
+const PUB_KEY = '2PACX-1vS-7gfOx3vmtsSYDkBCVZTiNAtpBoJErlaQMP1v3Nnq1uUfNKMrM3fdn9w7jKm6lmLR10Fx8ijnVw-I';
+const OPS_GID = '1750915583';   // ← gid de la pestaña de operaciones (matriz financiera)
+const LOG_GID = '621257661';     // ← gid de la pestaña de logística / contenedores
+
+// Columns hidden from the dashboard (KPIs still use their data).
+// Tip: any column whose name starts with "_" in the Sheet is also hidden automatically.
+const HIDDEN_COLS = ['invoice date', 'broker', 'broker (supplier)', 'broker (client)', 'operation status'];
+const isHiddenCol = h => {
+  const n = (h||'').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return (h||'').trim().startsWith('_') || HIDDEN_COLS.includes(n) || n.startsWith('broker');
+};
+
+const BASE_URL = gid => `https://docs.google.com/spreadsheets/d/e/${PUB_KEY}/pub?gid=${gid}&single=true&output=csv`;
+
+async function fetchWithFallback(url) {
+  try {
+    const r = await fetch(url);
+    if (r.ok) return await r.text();
+    throw new Error('direct fetch failed');
+  } catch (e) {
+    const r2 = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+    if (!r2.ok) throw new Error('proxy fetch failed');
+    return await r2.text();
+  }
+}
+
+// ══════════════════ HELPERS ══════════════════
+const norm = h => (h||'').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const isBlank = v => { const s=(v||'').trim(); return s==='' || s==='-' || s==='—'; };
+
+const clean = v => {
+  let s = (v||'').trim().replace(/\$/g,'').replace(/\s/g,'').replace(/%$/,'');
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) { s = s.replace(/\./g,'').replace(',','.'); }
+  else if (/^-?\d+,\d+$/.test(s)) { s = s.replace(',','.'); }
+  else { s = s.replace(/,/g,''); }
+  return s;
+};
+const num = v => isBlank(v) ? 0 : (parseFloat(clean(v)) || 0);
+
+const fmtUSD = n => isNaN(n) ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(Number(n)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtNum = n => isNaN(n) ? '—' : Number(n).toLocaleString('en-US');
+
+function parseDMY(v) {
+  const m = (v||'').trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (!m) return null;
+  let y = parseInt(m[3]); if (y < 100) y += 2000;
+  const d = new Date(y, parseInt(m[2])-1, parseInt(m[1]));
+  return isNaN(d) ? null : d;
+}
+
+// CSV parser with automatic header-row detection (handles 2-row grouped headers)
+function parseCSV(text) {
+  const lines = text.replace(/\r/g,'').trim().split('\n');
+  if (lines.length < 2) return { headers: [], rows: [] };
+  const split = line => {
+    const vals = []; let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    return vals.map(v => v.replace(/^"|"$/g,'').trim());
+  };
+  // Header = the row (among first 3) with the most non-empty cells
+  let headerIdx = 0, best = -1;
+  for (let i = 0; i < Math.min(3, lines.length); i++) {
+    const count = split(lines[i]).filter(v => v !== '').length;
+    if (count > best) { best = count; headerIdx = i; }
+  }
+  const rawHeaders = split(lines[headerIdx]);
+  const headers = [];
+  rawHeaders.forEach((h, i) => { if (h !== '') headers.push({ name: h, col: i }); });
+  const rows = lines.slice(headerIdx + 1).map(line => {
+    const vals = split(line);
+    const obj = {};
+    headers.forEach(h => obj[h.name] = (vals[h.col] || '').trim());
+    return obj;
+  }).filter(r => Object.values(r).some(v => v !== '' && v !== '-'));
+  return { headers: headers.map(h => h.name), rows };
+}
+
+// Column type detection by header name
+function colType(h) {
+  const n = norm(h);
+  if (/estado|status/.test(n)) return 'status';
+  if (/payment|pago/.test(n)) return 'status';
+  if (/margin\s*%|%\s*margin|net\s*margin/.test(n)) return 'pct';
+  if (/(total|profit|expense|demurrage|financing|commission|comision|freight|flete|amount|monto|valor|cost)/.test(n)) return 'usd';
+  if (/^lbs$|libras/.test(n)) return 'int';
+  if (/(^pi$|invoice|contenedor|container|^bl$|booking)/.test(n)) return 'id';
+  if (/fecha|date|^etd$|^eta$|^lfd|entregado/.test(n)) return 'date';
+  return 'text';
+}
+
+function statusBadge(v) {
+  const n = norm(v);
+  if (isBlank(v)) return '<span class="badge b-neutral">—</span>';
+  if (/pagado|paid|entregado|delivered|closed|cerrad/.test(n)) return `<span class="badge b-paid">${v}</span>`;
+  if (/por\s*pagar|pending|pendiente/.test(n)) return `<span class="badge b-pending">${v}</span>`;
+  if (/transito|transit/.test(n)) return `<span class="badge b-info">${v}</span>`;
+  if (/puerto|port/.test(n)) return `<span class="badge b-pending">${v}</span>`;
+  if (/no\s*ha\s*sido|not\s*shipped|por\s*embarcar/.test(n)) return `<span class="badge b-neutral">${v}</span>`;
+  if (/open|abiert/.test(n)) return `<span class="badge b-violet">${v}</span>`;
+  return `<span class="badge b-neutral">${v}</span>`;
+}
+
+function cellHTML(type, val) {
+  const v = (val||'').trim();
+  if (isBlank(v) && type !== 'status') return type==='usd'||type==='int'||type==='pct' ? '<td class="right num" style="color:var(--slate-400);">—</td>' : '<td style="color:var(--slate-400);">—</td>';
+  switch (type) {
+    case 'status': return `<td class="center">${statusBadge(v)}</td>`;
+    case 'usd':  { const n = num(v); return `<td class="right num ${n<0?'neg':''}">${fmtUSD(n)}</td>`; }
+    case 'pct':  { const n = num(v); return `<td class="right num ${n>=0?'pos':'neg'}">${n.toFixed(1)}%</td>`; }
+    case 'int':  return `<td class="right num">${fmtNum(num(v))}</td>`;
+    case 'id':   return `<td><span class="pi-num">${v}</span></td>`;
+    case 'date': return `<td class="num">${v}</td>`;
+    default:     return `<td>${v}</td>`;
+  }
+}
+
+function buildHeader(theadRow, headers, types, extra) {
+  theadRow.innerHTML = headers.map((h, i) => {
+    const t = types[i];
+    const cls = (t==='usd'||t==='int'||t==='pct') ? ' class="right"' : (t==='status' ? ' class="center"' : '');
+    return `<th${cls}>${h}</th>`;
+  }).join('') + (extra || '');
+}
+
+// ══════════════════ OPERATIONS ══════════════════
+function renderOps(data) {
+  const { headers, rows } = data;
+  const theadRow = document.getElementById('ops-thead-row');
+  const tbody = document.getElementById('ops-tbody');
+  const visible = headers.filter(h => !isHiddenCol(h));
+  // Display order: "Other Expenses" goes right before the Commission columns
+  const oeIdx = visible.findIndex(h => /other\s*expense|otros\s*gastos/.test(norm(h)));
+  const cmIdx = visible.findIndex(h => /commission|comisi/.test(norm(h)));
+  if (oeIdx > -1 && cmIdx > -1 && oeIdx > cmIdx) { const [oe] = visible.splice(oeIdx, 1); visible.splice(cmIdx, 0, oe); }
+  const types = visible.map(colType);
+  buildHeader(theadRow, visible, types);
+
+  const find = re => headers.find(h => re.test(norm(h)));
+  const buyCol = find(/purchase\s*total|total\s*(de\s*)?compra/);
+  const sellCol = find(/sale\s*total|total\s*(de\s*)?venta/);
+  const netCol = find(/net\s*profit|utilidad\s*neta/);
+  const grossCol = find(/gross\s*profit|utilidad\s*bruta/);
+  const paySupCol = find(/payment\s*\(?supplier|pago\s*\(?proveedor/);
+  const payCliCol = find(/payment\s*\(?client|pago\s*\(?cliente/);
+  const opStatusCol = find(/operation\s*status|estado\s*(de\s*la\s*)?operacion/);
+  const dueCol = find(/invoice\s*due\s*date|due\s*date|fecha\s*(de\s*)?vencimiento/);
+  const expenseCols = headers.filter(h => /demurrage|financing|commission|comision|other\s*expense|otros\s*gastos/.test(norm(h)));
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${visible.length}">No operations found in Google Sheets.</td></tr>`;
+    document.getElementById('ops-count-badge').textContent = '0 Operations';
+    return { buy:0, sell:0, net:0, gross:0, exp:0, open:0, count:0, paySup:0, payCli:0 };
+  }
+
+  let buy=0, sell=0, net=0, gross=0, exp=0, open=0, paySup=0, payCli=0;
+  tbody.innerHTML = rows.map(r => {
+    if (buyCol) buy += num(r[buyCol]);
+    if (sellCol) sell += num(r[sellCol]);
+    if (netCol) net += num(r[netCol]);
+    if (grossCol) gross += num(r[grossCol]);
+    expenseCols.forEach(c => exp += num(r[c]));
+    if (opStatusCol && /open|abiert/.test(norm(r[opStatusCol]))) open++;
+    if (paySupCol && /por\s*pagar|pending/.test(norm(r[paySupCol]))) paySup++;
+    if (payCliCol && /por\s*pagar|pending/.test(norm(r[payCliCol]))) payCli++;
+    return '<tr>' + visible.map((h,i) => {
+      // Traffic light on Invoice due date: only when the client has NOT paid
+      if (dueCol && h === dueCol) {
+        const v = (r[h]||'').trim();
+        if (isBlank(v)) return '<td style="color:var(--slate-400);">—</td>';
+        const clientPaid = payCliCol && /pagado|paid/.test(norm(r[payCliCol]));
+        if (clientPaid) return `<td class="num">${v}</td>`;
+        const due = parseDMY(v);
+        if (!due) return `<td class="num">${v}</td>`;
+        const t = new Date(); t.setHours(0,0,0,0);
+        const days = Math.round((due - t) / 86400000);
+        let chip;
+        if (days < 0)       chip = `<span class="badge b-late">Overdue ${-days}d</span>`;
+        else if (days === 0) chip = '<span class="badge b-late">Due TODAY</span>';
+        else if (days <= 5)  chip = `<span class="badge b-pending">Due in ${days}d</span>`;
+        else                 chip = `<span class="badge b-paid">${days}d left</span>`;
+        return `<td class="num">${v} ${chip}</td>`;
+      }
+      return cellHTML(types[i], r[h]);
+    }).join('') + '</tr>';
+  }).join('');
+
+  // Totals row: sums every money column
+  tbody.innerHTML += '<tr class="total-row">' + visible.map((h,i) => {
+    if (i === 0) return `<td class="strong">TOTAL — ${rows.length} Op${rows.length!==1?'s':''}</td>`;
+    if (types[i] === 'usd') { const s = rows.reduce((a,r)=>a+num(r[h]),0); return `<td class="right num strong ${s<0?'neg':''}">${fmtUSD(s)}</td>`; }
+    if (types[i] === 'int') return `<td class="right num strong">${fmtNum(rows.reduce((a,r)=>a+num(r[h]),0))}</td>`;
+    if (types[i] === 'pct' && buyCol && netCol) { const s = rows.reduce((a,r)=>a+num(r[buyCol]),0); const nn = rows.reduce((a,r)=>a+num(r[netCol]),0); return `<td class="right num strong pos">${s>0?(nn/s*100).toFixed(1):'0.0'}%</td>`; }
+    return '<td></td>';
+  }).join('') + '</tr>';
+
+  document.getElementById('ops-count-badge').textContent = rows.length + ' Operation' + (rows.length!==1?'s':'');
+  return { buy, sell, net, gross, exp, open, count: rows.length, paySup, payCli };
+}
+
+// ══════════════════ LOGISTICS ══════════════════
+function renderLog(data) {
+  const { headers, rows } = data;
+  const theadRow = document.getElementById('log-thead-row');
+  const tbody = document.getElementById('log-tbody');
+  const visible = headers.filter(h => !isHiddenCol(h));
+  const types = visible.map(colType);
+  buildHeader(theadRow, visible, types, '<th class="center">LFD Alert</th>');
+
+  const find = re => headers.find(h => re.test(norm(h)));
+  const lfdNavCol = find(/lfd\s*naviera|lfd\s*carrier|^lfd$/);
+  const lfdTerCol = find(/lfd\s*terminal/);
+  const estadoCol = find(/estado\s*logistico|estado|status/);
+  const etaCol = find(/^eta$/);
+  const entregadoCol = find(/entregado/);
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${visible.length+1}">No containers found in Google Sheets.</td></tr>`;
+    document.getElementById('log-count-badge').textContent = '0 Containers';
+    return { active:0, transit:0, port:0, delivered:0, alerts:0, count:0 };
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let active=0, transit=0, port=0, delivered=0, alerts=0;
+
+  const isDeliveredRow = r => {
+    const estado = estadoCol ? norm(r[estadoCol]) : '';
+    return /entregado|delivered/.test(estado) || (entregadoCol && !isBlank(r[entregadoCol]));
+  };
+  rows.forEach(r => {
+    const estado = estadoCol ? norm(r[estadoCol]) : '';
+    if (isDeliveredRow(r)) delivered++; else active++;
+    if (/transito|transit/.test(estado)) transit++;
+    if (/puerto|port/.test(estado)) port++;
+  });
+  // Closed (delivered) containers are hidden from the table but still counted above
+  const shown = rows.filter(r => !isDeliveredRow(r));
+  if (!shown.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${visible.length+1}">All containers delivered ✓</td></tr>`;
+    document.getElementById('log-count-badge').textContent = delivered + ' delivered · 0 active';
+    document.getElementById('log-count-badge').className = 'badge b-paid';
+    return { active, transit, port, delivered, alerts:0, count: rows.length };
+  }
+
+  tbody.innerHTML = shown.map(r => {
+    const estado = estadoCol ? norm(r[estadoCol]) : '';
+    const isDelivered = false;
+    const isTransit = /transito|transit/.test(estado);
+    const isPort = /puerto|port/.test(estado);
+    const notShipped = /no\s*ha\s*sido|not\s*shipped/.test(estado);
+
+    // LFD chip: earliest of LFD Naviera / LFD Terminal
+    let chip = '<span class="badge b-neutral">—</span>';
+    if (notShipped) {
+      chip = '<span class="badge b-neutral">Not shipped</span>';
+    } else {
+      const dates = [lfdNavCol ? parseDMY(r[lfdNavCol]) : null, lfdTerCol ? parseDMY(r[lfdTerCol]) : null].filter(Boolean);
+      if (dates.length) {
+        const lfd = new Date(Math.min(...dates));
+        const days = Math.round((lfd - today) / 86400000);
+        if (days < 0)       { chip = `<span class="badge b-late">LFD overdue ${-days}d</span>`; alerts++; }
+        else if (days === 0){ chip = '<span class="badge b-late">LFD due TODAY</span>'; alerts++; }
+        else if (days <= 5) { chip = `<span class="badge b-pending">LFD in ${days}d</span>`; alerts++; }
+        else                { chip = `<span class="badge b-paid">${days} free days</span>`; }
+      } else if (isTransit && etaCol) {
+        const eta = parseDMY(r[etaCol]);
+        if (eta) {
+          const days = Math.round((eta - today) / 86400000);
+          chip = `<span class="badge b-info">ETA in ${days}d</span>`;
+        }
+      }
+    }
+    return '<tr>' + visible.map((h,i) => cellHTML(types[i], r[h])).join('') + `<td class="center">${chip}</td></tr>`;
+  }).join('');
+
+  let badge = shown.length + ' active' + (delivered ? ` · ${delivered} delivered` : '');
+  if (alerts) badge += ` · ${alerts} alert${alerts!==1?'s':''} ⚠️`;
+  const badgeEl = document.getElementById('log-count-badge');
+  badgeEl.textContent = badge;
+  badgeEl.className = 'badge ' + (alerts ? 'b-late' : 'b-info');
+  return { active, transit, port, delivered, alerts, count: rows.length };
+}
+
+// ══════════════════ KPIs ══════════════════
+function updateKPIs(o, l) {
+  document.getElementById('kpi-buy').textContent = fmtUSD(o.buy);
+  document.getElementById('kpi-buy-sub').textContent = `${o.count} operation${o.count!==1?'s':''}`;
+  document.getElementById('kpi-sell').textContent = fmtUSD(o.sell);
+  document.getElementById('kpi-sell-sub').textContent = `Gross profit ${fmtUSD(o.gross)}`;
+  document.getElementById('kpi-net').textContent = fmtUSD(o.net);
+  document.getElementById('kpi-net-sub').textContent = o.buy > 0 ? `${(o.net/o.buy*100).toFixed(1)}% net margin over cost` : '';
+  document.getElementById('kpi-exp').textContent = fmtUSD(o.exp);
+  document.getElementById('kpi-exp-sub').textContent = 'Demurrage + financing + commissions + other';
+  document.getElementById('kpi-open').textContent = o.open;
+  document.getElementById('kpi-pay').textContent = `${o.paySup} / ${o.payCli}`;
+  document.getElementById('kpi-cont').textContent = l.active;
+  document.getElementById('kpi-cont-sub').textContent = `${l.transit} in transit · ${l.port} at port · ${l.delivered} delivered`;
+  document.getElementById('kpi-lfd').textContent = l.alerts;
+}
+
+// ══════════════════ LOAD ══════════════════
+async function loadData() {
+  document.getElementById('error-state').style.display = 'none';
+  try {
+    const [oText, lText] = await Promise.all([
+      fetchWithFallback(BASE_URL(OPS_GID)),
+      fetchWithFallback(BASE_URL(LOG_GID))
+    ]);
+    const ops = parseCSV(oText);
+    const log = parseCSV(lText);
+    const oStats = renderOps(ops);
+    const lStats = renderLog(log);
+    updateKPIs(oStats, lStats);
+    document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleString('en-US');
+  } catch (e) {
+    console.error(e);
+    document.getElementById('error-state').style.display = 'block';
+  }
+}
+loadData();
+</script>
+</body>
+</html>
